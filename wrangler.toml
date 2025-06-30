@@ -1,0 +1,54 @@
+name = "blog-application"
+compatibility_date = "2023-10-30"
+
+# Define the Durable Object class used by multiple workers
+[[migrations]]
+tag = "v1" # Initial migration defining the DO class
+new_classes = ["EmailStoreDO"]
+
+[[workers]]
+name = "email-receiver-worker"
+main = "workers/email-receiver-worker/src/index.js"
+compatibility_flags = [ "durable_object_namespaces" ]
+durable_objects.bindings = [
+  # This worker exports the EmailStoreDO class
+  { name = "EMAIL_STORE_DO", class_name = "EmailStoreDO" }
+]
+
+[[workers]]
+name = "public-blog-worker"
+main = "workers/public-blog-worker/src/index.js"
+compatibility_flags = [ "durable_object_namespaces" ]
+durable_objects.bindings = [
+  # This worker needs access to the EmailStoreDO
+  { name = "EMAIL_STORE_DO", class_name = "EmailStoreDO" }
+]
+
+# KV Namespace for Rules
+[[kv_namespaces]]
+binding = "BLOG_RULES_KV"
+id = "<YOUR_KV_NAMESPACE_ID_RULES>" # User will need to replace this after creating the KV namespace for rules
+
+[[kv_namespaces]]
+binding = "BLOG_ADMIN_SECRETS_KV"
+id = "<YOUR_KV_NAMESPACE_ID_SECRETS>" # User will need to replace this after creating the KV namespace for secrets
+
+[[workers]]
+name = "admin-worker"
+main = "workers/admin-worker/src/index.js"
+compatibility_flags = [ "durable_object_namespaces" ]
+# This worker needs access to the EmailStoreDO for post management
+# and BLOG_RULES_KV for rule management
+# and BLOG_ADMIN_SECRETS_KV for OAuth secrets
+durable_objects.bindings = [
+  { name = "EMAIL_STORE_DO", class_name = "EmailStoreDO" }
+]
+kv_namespaces = [
+  { binding = "BLOG_RULES_KV", id = "<YOUR_KV_NAMESPACE_ID_RULES>" }, # Must match the ID above
+  { binding = "BLOG_ADMIN_SECRETS_KV", id = "<YOUR_KV_NAMESPACE_ID_SECRETS>" } # Must match the ID above
+]
+# Add routes here if you want this worker to be accessible via a custom domain or specific path
+# routes = [
+#   { pattern = "admin.yourdomain.com/*", zone_name = "yourdomain.com" },
+#   { pattern = "yourdomain.com/admin/*", zone_name = "yourdomain.com" }
+# ]
