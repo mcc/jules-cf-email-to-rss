@@ -1,0 +1,41 @@
+// wrangler.jsonc
+{
+	"$schema": "https://raw.githubusercontent.com/cloudflare/workerd/main/src/workerd/server/instrumentation-config.capnp.json",
+	"name": "gemini-email-to-blog",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-03-07",
+	"compatibility_flags": ["nodejs_compat"],
+	"durable_objects": {
+		"bindings": [
+			{ "name": "POST_INDEX", "class_name": "IndexDO" },
+			{ "name": "POST_STORAGE", "class_name": "PostDO" }
+		]
+	},
+    "assets": {
+        "directory": "./assets"
+    },
+	"migrations": [
+		{
+			"tag": "v1",
+            "new_sqlite_classes": ["IndexDO", "PostDO"],
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "BLOG_RULES",
+			"id": "68f0c878410b4e10a85267e3984b2ced", // <-- Replace this
+			"preview_id": "68f0c878410b4e10a85267e3984b2ced" // <-- Replace this
+		}
+	],
+	"vars": {
+		"BLOG_TITLE": "My Awesome Blog",
+		"BLOG_URL": "https://email2rss.collect.skin" // <-- Replace with your actual URL after first deploy
+	},
+	"secrets": ["ADMIN_TOKEN"],
+	"email": [{ "type": "forwarder", "destination": "email2rss@collect.skin" }],
+	
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	}
+}
