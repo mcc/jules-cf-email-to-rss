@@ -1,19 +1,22 @@
 // src/views/rss.ts
 import { Env, PostSummary } from '../types';
+import { redactEmails } from '../services/redact';
 
 export const generateRss = (posts: PostSummary[], env: Env): string => {
 	const items = posts
-		.map(
-			(post) => `
+		.map((post) => {
+			const redactedSubject = redactEmails(post.subject);
+			const redactedDescription = redactEmails(`A post titled "${post.subject}"`); // Explicitly redact description content
+			return `
         <item>
-            <title><![CDATA[${post.subject}]]></title>
+            <title><![CDATA[${redactedSubject}]]></title>
             <link>${env.BLOG_URL}/post/${post.id}</link>
             <guid isPermaLink="true">${env.BLOG_URL}/post/${post.id}</guid>
             <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
-            <description><![CDATA[A post titled "${post.subject}"]]></description>
+            <description><![CDATA[${redactedDescription}]]></description>
         </item>
-    `,
-		)
+    `;
+		})
 		.join('');
 
 	return `<?xml version="1.0" encoding="UTF-8"?>

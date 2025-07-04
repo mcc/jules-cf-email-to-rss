@@ -1,6 +1,7 @@
 // src/views/pages.ts
 import { Env, Post, PostSummary } from '../types';
 import { renderLayout } from './layout';
+import { redactEmails } from '../services/redact';
 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -28,17 +29,22 @@ export const renderBlogIndex = (posts: PostSummary[], env: Env): string => {
 };
 
 export const renderPostPage = (post: Post, env: Env): string => {
+	const displayAuthor = post.from.name || redactEmails(post.from.address);
+	const redactedSubject = redactEmails(post.subject);
+	const redactedHtml = redactEmails(post.html);
+	const redactedText = redactEmails(post.text);
+
 	const content = `
         <article>
-            <h1>${post.subject}</h1>
+            <h1>${redactedSubject}</h1>
             <div class="post-meta">
-                <span>By ${post.from.name || post.from.address} on ${formatDate(post.publishedAt)}</span>
+                <span>By ${displayAuthor} on ${formatDate(post.publishedAt)}</span>
                  ${post.tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}
             </div>
             <div class="post-content">
-                ${post.html || `<p>${post.text?.replace(/\n/g, '<br>')}</p>`}
+                ${redactedHtml || `<p>${redactedText?.replace(/\n/g, '<br>')}</p>`}
             </div>
         </article>
     `;
-	return renderLayout(post.subject, content, env);
+	return renderLayout(redactedSubject, content, env);
 };
