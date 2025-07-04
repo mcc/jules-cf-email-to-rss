@@ -37,10 +37,31 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
-	loginButton.addEventListener('click', () => {
-		adminToken = tokenInput.value;
-		sessionStorage.setItem('adminToken', adminToken);
-		checkAuth();
+	loginButton.addEventListener('click', async () => {
+		const token = tokenInput.value;
+		if (!token) {
+			alert('Please enter an admin token.');
+			return;
+		}
+		try {
+			const response = await fetch('/api/admin/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token }),
+			});
+			const result = await response.json();
+			if (result.success) {
+				adminToken = token;
+				sessionStorage.setItem('adminToken', adminToken);
+				checkAuth();
+			} else {
+				alert(result.message || 'Login failed.');
+				tokenInput.value = ''; // Clear the input
+			}
+		} catch (error) {
+			console.error('Login error:', error);
+			alert('An error occurred during login. Please try again.');
+		}
 	});
 
 	logoutButton.addEventListener('click', () => {

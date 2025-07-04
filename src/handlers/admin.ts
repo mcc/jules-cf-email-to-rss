@@ -1,12 +1,48 @@
 // src/handlers/admin.ts
 
 import { Hono } from 'hono';
+import { bearerAuth } from 'hono/bearer-auth';
 import { getRules } from '../services/rules';
 import type { Env, Post, PostSummary, TaggingRule } from '../types';
 
 const adminRoutes = new Hono<{ Bindings: Env }>();
 
+// Auth middleware
+const authMiddleware = (env: Env) =>
+	bearerAuth({
+		verifyToken: async (token, c) => {
+			return token === env.ADMIN_TOKEN;
+		},
+		realm: 'Admin Area',
+		prefix: 'Bearer', // Ensure the prefix is Bearer
+	});
+
+// --- Auth ---
+// Login route is *not* protected by authMiddleware
+adminRoutes.post('/login', async (c) => {
+	try {
+		const { token } = await c.req.json<{ token: string }>();
+		// Securely compare tokens (though direct comparison is okay for opaque tokens)
+		if (token && token === c.env.ADMIN_TOKEN) {
+			// In a real app, you'd issue a session token (e.g., JWT) here
+			// and the client would store that for subsequent requests.
+			// For this example, client continues to send the raw admin token.
+			return c.json({ success: true, message: 'Login successful' });
+		}
+		return c.json({ success: false, message: 'Invalid token' }, 401);
+	} catch (error) {
+		return c.json({ success: false, message: 'Invalid request body' }, 400);
+	}
+});
+
+// Apply auth middleware to all subsequent routes in this group
+adminRoutes.use('*', async (c, next) => {
+	const mw = authMiddleware(c.env);
+	return mw(c, next);
+});
+
 // --- Posts API ---
+// These routes are now protected
 
 // List all posts (published and drafts)
 adminRoutes.get('/posts', async (c) => {
@@ -90,6 +126,21 @@ adminRoutes.delete('/rules/:id', async (c) => {
 	const { id } = c.req.param();
 	await c.env.BLOG_RULES.delete(id);
 	return c.json({ success: true });
+});
+
+// --- Auth ---
+adminRoutes.post('/login', async (c) => {
+	try {
+		const { token } = await c.req.json<{ token: string }>();
+		if (token && token === c.env.ADMIN_TOKEN) {
+			// In a real app, you'd issue a session token here.
+			// For this example, we'll keep it simple.
+			return c.json({ success: true, message: 'Login successful' });
+		}
+		return c.json({ success: false, message: 'Invalid token' }, 401);
+	} catch (error) {
+		return c.json({ success: false, message: 'Invalid request body' }, 400);
+	}
 });
 
 export default adminRoutes;
