@@ -26,7 +26,12 @@ const app = new Hono<{ Bindings: Env }>();
 
 // Secure all /api/admin/* routes with bearer token authentication
 const adminApi = app.basePath('/api/admin');
-adminApi.use('*', async (c, next) => {
+
+// Apply auth middleware to all admin routes *except* login
+adminApi.use('/*', async (c, next) => {
+	if (c.req.path === '/api/admin/login') {
+		return next();
+	}
 	const auth = bearerAuth({ token: c.env.ADMIN_TOKEN });
 	return auth(c, next);
 });
@@ -43,3 +48,5 @@ export default {
 	email: handleEmail,
 };
 
+// Export the app instance for testing purposes
+export { app };
