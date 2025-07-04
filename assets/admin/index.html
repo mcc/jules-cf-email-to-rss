@@ -5,8 +5,42 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Admin Portal</title>
 		<script src="https://cdn.tailwindcss.com"></script>
+		<style>
+			/* Toast Notification Styles */
+			#toast-container {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				z-index: 1000;
+				width: 300px;
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+			}
+			.toast {
+				padding: 1rem;
+				border-radius: 0.375rem; /* rounded-md */
+				color: white;
+				font-size: 0.875rem; /* text-sm */
+				box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+				opacity: 0;
+				transform: translateX(100%);
+				transition: all 0.3s ease-out;
+			}
+			.toast.show {
+				opacity: 1;
+				transform: translateX(0);
+			}
+			.toast.success {
+				background-color: #10b981; /* bg-green-500 */
+			}
+			.toast.error {
+				background-color: #ef4444; /* bg-red-500 */
+			}
+		</style>
 	</head>
 	<body class="bg-gray-100 text-gray-800 antialiased">
+		<div id="toast-container"></div>
 		<h1 class="text-4xl font-bold text-center my-8 text-gray-900">Admin Portal</h1>
 
 		<div id="auth-view" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-xl">
@@ -26,11 +60,20 @@
 
 				<section id="rules-section">
 					<h2 class="text-3xl font-semibold text-gray-800 mb-6">Tagging Rules</h2>
+					<button id="add-new-rule-button" class="mb-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">Add New Rule</button>
 					<div id="rules-list" class="space-y-6 mb-8"></div>
-					<h3 class="text-2xl font-semibold text-gray-700 mb-4">Add/Edit Rule</h3>
-					<form id="rule-form" class="space-y-4 bg-gray-50 p-6 rounded-lg shadow">
-						<input type="hidden" id="rule-id" />
-						<div>
+
+					<!-- Rule Add/Edit Modal -->
+					<div id="rule-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+						<div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+							<div class="flex justify-between items-center pb-3">
+								<h3 id="rule-modal-title" class="text-2xl font-semibold text-gray-700">Add/Edit Rule</h3>
+								<button id="close-rule-modal" class="text-black close-modal-button">&times;</button>
+							</div>
+							<div id="rule-form-section">
+								<form id="rule-form" class="space-y-4 bg-gray-50 p-6 rounded-lg shadow">
+									<input type="hidden" id="rule-id" />
+									<div>
 							<label for="rule-priority" class="block text-sm font-medium text-gray-700 mb-1">Priority (lower runs first)</label>
 							<input type="number" id="rule-priority" value="10" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
 						</div>

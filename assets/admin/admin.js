@@ -54,13 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
 				adminToken = token;
 				sessionStorage.setItem('adminToken', adminToken);
 				checkAuth();
+				showToast('Login successful!', 'success');
 			} else {
-				alert(result.message || 'Login failed.');
+				showToast(result.message || 'Login failed.', 'error');
 				tokenInput.value = ''; // Clear the input
 			}
 		} catch (error) {
 			console.error('Login error:', error);
-			alert('An error occurred during login. Please try again.');
+			showToast('An error occurred during login.', 'error');
 		}
 	});
 
@@ -164,41 +165,81 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Event delegation for dynamic content
 	document.body.addEventListener('click', async (e) => {
 		const target = e.target;
-		const postDiv = target.closest('.post');
-		const ruleDiv = target.closest('.rule');
+		const itemDiv = target.closest('[data-id]'); // General selector for any item with a data-id
+
+		if (!itemDiv) return; // Exit if the click is not within an item container
+
+		const itemId = itemDiv.dataset.id;
+
+		// Check if the item is a post (by looking for a unique element within post items, e.g., tags-input)
+		const isPostItem = !!itemDiv.querySelector('.tags-input');
+		// Check if the item is a rule (by looking for a unique element, e.g., conditions list or specific button)
+		const isRuleItem = !!itemDiv.querySelector('.edit-rule') || !!itemDiv.querySelector('.delete-rule');
+
 
 		// Post actions
-		if (postDiv) {
-			const postId = postDiv.dataset.id;
+		if (isPostItem) {
 			if (target.matches('.toggle-publish')) {
-				const isPublished = !target.textContent.includes('Unpublish');
-				await api.patch(`/posts/${postId}`, { isPublished });
-				loadPosts();
+				// Determine current state by checking button text or some other indicator if available
+				// For simplicity, let's assume the button text accurately reflects the action to be taken.
+				// If button says "Unpublish", it means isPublished should be false.
+				try {
+					const currentPostData = await (await api.get(`/posts/${itemId}`)).json();
+					const newPublishState = !currentPostData.isPublished;
+					const res = await api.patch(`/posts/${itemId}`, { isPublished: newPublishState });
+					if (!res.ok) throw new Error(await res.text());
+					showToast(`Post ${newPublishState ? 'published' : 'unpublished'} successfully.`, 'success');
+					loadPosts(); // Reload to reflect changes
+				} catch (err) {
+					showToast(`Error updating post: ${err.message}`, 'error');
+				}
 			} else if (target.matches('.save-tags')) {
-				const tags = postDiv.querySelector('.tags-input').value.split(',').map((t) => t.trim()).filter(Boolean);
-				await api.patch(`/posts/${postId}`, { tags });
-				loadPosts();
+				try {
+					const tags = itemDiv.querySelector('.tags-input').value.split(',').map((t) => t.trim()).filter(Boolean);
+					const res = await api.patch(`/posts/${itemId}`, { tags });
+					if (!res.ok) throw new Error(await res.text());
+					showToast('Tags saved successfully.', 'success');
+					loadPosts(); // Reload to reflect changes
+				} catch (err) {
+					showToast(`Error saving tags: ${err.message}`, 'error');
+				}
 			} else if (target.matches('.delete-post')) {
 				if (confirm('Are you sure you want to delete this post?')) {
-					await api.delete(`/posts/${postId}`);
-					loadPosts();
+					try {
+						const res = await api.delete(`/posts/${itemId}`);
+						if (!res.ok) throw new Error(await res.text());
+						showToast('Post deleted successfully.', 'success');
+						loadPosts(); // Reload to remove the item
+					} catch (err) {
+						showToast(`Error deleting post: ${err.message}`, 'error');
+					}
 				}
 			}
 		}
 
 		// Rule actions
-		if (ruleDiv) {
-			const ruleId = ruleDiv.dataset.id;
+		else if (isRuleItem) { // Use else if to ensure it's not a post action
 			if (target.matches('.delete-rule')) {
 				if (confirm('Are you sure you want to delete this rule?')) {
-					await api.delete(`/rules/${ruleId}`);
-					loadRules();
+					try {
+						const res = await api.delete(`/rules/${itemId}`);
+						if (!res.ok) throw new Error(await res.text());
+						showToast('Rule deleted successfully.', 'success');
+						loadRules(); // Reload to remove the item
+					} catch (err) {
+						showToast(`Error deleting rule: ${err.message}`, 'error');
+					}
 				}
 			} else if (target.matches('.edit-rule')) {
-				const res = await api.get('/rules');
+				const res = await api.get('/rules'); // Fetch all rules again to get the specific one
 				const rules = await res.json();
-				const ruleToEdit = rules.find(r => r.id === ruleId);
-				populateRuleForm(ruleToEdit);
+				const ruleToEdit = rules.find(r => r.id === itemId);
+				if (ruleToEdit) {
+					openRuleModal(ruleToEdit); // Open modal for editing
+				} else {
+					console.error('Rule not found for editing:', itemId);
+					alert('Could not find the rule to edit.');
+				}
 			}
 		}
 	});
@@ -206,6 +247,40 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Rule form logic
 	const ruleForm = document.getElementById('rule-form');
 	const conditionsContainer = document.getElementById('rule-conditions');
+	const ruleModal = document.getElementById('rule-modal');
+	const ruleModalTitle = document.getElementById('rule-modal-title');
+	const addNewRuleButton = document.getElementById('add-new-rule-button');
+	const closeRuleModalButton = document.getElementById('close-rule-modal');
+
+	function openRuleModal(rule = null) {
+		ruleForm.reset();
+		conditionsContainer.innerHTML = '';
+		document.getElementById('rule-id').value = '';
+
+		if (rule) {
+			ruleModalTitle.textContent = 'Edit Rule';
+			populateRuleForm(rule);
+		} else {
+			ruleModalTitle.textContent = 'Add New Rule';
+			// Add one empty condition for new rules by default
+			createConditionElement();
+		}
+		ruleModal.style.display = 'flex'; // Use flex to allow for centering defined by modal's own styles if any
+	}
+
+	function closeRuleModal() {
+		ruleModal.style.display = 'none';
+	}
+
+	addNewRuleButton.addEventListener('click', () => openRuleModal());
+	closeRuleModalButton.addEventListener('click', closeRuleModal);
+	// Close modal if clicking outside the modal content
+	ruleModal.addEventListener('click', (event) => {
+		if (event.target === ruleModal) {
+			closeRuleModal();
+		}
+	});
+
 
 	function createConditionElement() {
 		const div = document.createElement('div');
@@ -241,7 +316,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 	document.getElementById('add-condition').addEventListener('click', createConditionElement);
-    document.getElementById('clear-form').addEventListener('click', () => ruleForm.reset());
+    document.getElementById('clear-form').addEventListener('click', () => {
+        ruleForm.reset();
+        conditionsContainer.innerHTML = '';
+        document.getElementById('rule-id').value = ''; // Clear ID
+        ruleModalTitle.textContent = 'Add New Rule'; // Reset title
+        createConditionElement(); // Add one empty condition
+    });
 
 	conditionsContainer.addEventListener('click', (e) => {
 		if (e.target.matches('.remove-condition')) {
@@ -268,12 +349,46 @@ document.addEventListener('DOMContentLoaded', () => {
 			tagsToAdd: document.getElementById('rule-tags').value.split(',').map((t) => t.trim()).filter(Boolean),
 			conditions,
 		};
-		await api.post('/rules', rule);
-		ruleForm.reset();
-        conditionsContainer.innerHTML = '';
-		loadRules();
+		try {
+			const res = await api.post('/rules', rule);
+			if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || `Server responded with ${res.status}`);
+            }
+			const savedRule = await res.json();
+			showToast(rule.id ? 'Rule updated successfully.' : 'Rule added successfully.', 'success');
+			closeRuleModal(); // Close modal after successful submission
+			loadRules(); // Reload rules to show changes
+		} catch (err) {
+			showToast(`Error saving rule: ${err.message}`, 'error');
+            // Optionally, keep the modal open if there's an error
+		}
 	});
 
 	// Initial Check
 	checkAuth();
+
+	// Toast Notification Function
+	function showToast(message, type = 'success', duration = 3000) {
+		const container = document.getElementById('toast-container');
+		const toast = document.createElement('div');
+		toast.className = `toast ${type}`; // 'success' or 'error'
+		toast.textContent = message;
+		container.appendChild(toast);
+
+		// Animate in
+		setTimeout(() => {
+			toast.classList.add('show');
+		}, 10); // Small delay to ensure transition triggers
+
+		// Animate out and remove
+		setTimeout(() => {
+			toast.classList.remove('show');
+			setTimeout(() => {
+				if (toast.parentElement === container) { // Check if still child before removing
+					container.removeChild(toast);
+				}
+			}, 300); // Wait for fade out transition
+		}, duration);
+	}
 });
