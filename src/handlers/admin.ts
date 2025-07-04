@@ -7,18 +7,9 @@ import type { Env, Post, PostSummary, TaggingRule } from '../types';
 
 const adminRoutes = new Hono<{ Bindings: Env }>();
 
-// Auth middleware
-const authMiddleware = (env: Env) =>
-	bearerAuth({
-		verifyToken: async (token, c) => {
-			return token === env.ADMIN_TOKEN;
-		},
-		realm: 'Admin Area',
-		prefix: 'Bearer', // Ensure the prefix is Bearer
-	});
-
 // --- Auth ---
-// Login route is *not* protected by authMiddleware
+// Login route - now handled by the global middleware in src/index.ts,
+// but the route definition is still needed here.
 adminRoutes.post('/login', async (c) => {
 	try {
 		const { token } = await c.req.json<{ token: string }>();
@@ -35,14 +26,8 @@ adminRoutes.post('/login', async (c) => {
 	}
 });
 
-// Apply auth middleware to all subsequent routes in this group
-adminRoutes.use('*', async (c, next) => {
-	const mw = authMiddleware(c.env);
-	return mw(c, next);
-});
-
 // --- Posts API ---
-// These routes are now protected
+// These routes are protected by the middleware in src/index.ts
 
 // List all posts (published and drafts)
 adminRoutes.get('/posts', async (c) => {

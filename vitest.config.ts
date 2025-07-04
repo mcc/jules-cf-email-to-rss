@@ -23,9 +23,16 @@ export default defineConfig({
   },
   // If you're using TypeScript, Vitest should pick up your tsconfig.json automatically.
   // You can specify tsconfig path if it's non-standard.
-  // resolve: {
-  //   alias: {
-  //      // Add any aliases you use in your project
-  //   }
-  // }
+  resolve: {
+    alias: [
+      {
+        find: /^cloudflare:(.+)$/,
+        // Ensure this path is correct relative to the project root
+        replacement: '/app/__mocks__/cloudflare/$1.js',
+      },
+      // You might need to add other aliases if there are other problematic imports
+      // For example, if 'hono/cloudflare-workers' causes issues, though it usually doesn't
+      // as Hono is designed to be environment-agnostic.
+    ],
+  },
 });
