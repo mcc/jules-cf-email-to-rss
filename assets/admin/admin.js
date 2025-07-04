@@ -84,21 +84,34 @@ document.addEventListener('DOMContentLoaded', () => {
 			postsList.innerHTML = posts
 				.map(
 					(post) => `
-                <div class="post" data-id="${post.id}">
-                    <h4>${post.subject}</h4>
-                    <div class="post-meta">
-                        <span>ID: ${post.id}</span><br>
-                        <span>Received: ${new Date(post.publishedAt).toLocaleString()}</span><br>
-                        <span class="status ${post.isPublished ? 'published' : 'draft'}">
-                            ${post.isPublished ? 'PUBLISHED' : 'DRAFT'}
-                        </span>
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 space-y-3" data-id="${post.id}">
+                    <h4 class="text-xl font-semibold text-gray-800">${post.subject}</h4>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <p><span class="font-medium">ID:</span> ${post.id}</p>
+                        <p><span class="font-medium">Received:</span> ${new Date(post.publishedAt).toLocaleString()}</p>
+                        <p>
+													<span class="font-medium">Status:</span>
+													<span class="px-2 py-1 text-xs font-semibold rounded-full ${
+														post.isPublished
+															? 'bg-green-100 text-green-700'
+															: 'bg-yellow-100 text-yellow-700'
+													}">
+														${post.isPublished ? 'PUBLISHED' : 'DRAFT'}
+													</span>
+												</p>
                     </div>
-                    <div>
-                        <input type="text" class="tags-input" value="${post.tags.join(', ')}">
-                        <button class="save-tags">Save Tags</button>
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                        <input type="text" class="tags-input flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm" value="${post.tags.join(', ')}">
+                        <button class="save-tags bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150">Save Tags</button>
                     </div>
-                    <button class="toggle-publish">${post.isPublished ? 'Unpublish' : 'Publish'}</button>
-                    <button class="delete delete-post">Delete</button>
+                    <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                        <button class="toggle-publish flex-1 ${
+													post.isPublished ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'
+												} text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150">${
+						post.isPublished ? 'Unpublish' : 'Publish'
+					}</button>
+                        <button class="delete-post flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150">Delete</button>
+                    </div>
                 </div>
             `,
 				)
@@ -117,13 +130,28 @@ document.addEventListener('DOMContentLoaded', () => {
 			rulesList.innerHTML = rules
 				.map(
 					(rule) => `
-                <div class="rule" data-id="${rule.id}">
-                    <p><strong>Priority:</strong> ${rule.priority}</p>
-                    <p><strong>Tags:</strong> ${rule.tagsToAdd.join(', ')}</p>
-                    <p><strong>Conditions:</strong></p>
-                    <ul>${rule.conditions.map((c) => `<li>${c.field} ${c.operator} "${c.value}"</li>`).join('')}</ul>
-                    <button class="edit-rule">Edit</button>
-                    <button class="delete delete-rule">Delete</button>
+                <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 space-y-3" data-id="${rule.id}">
+                    <p class="text-sm text-gray-700"><span class="font-semibold">Priority:</span> ${rule.priority}</p>
+                    <p class="text-sm text-gray-700"><span class="font-semibold">Tags:</span>
+											<span class="ml-1">${rule.tagsToAdd
+												.map((tag) => `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">${tag}</span>`)
+												.join(' ')}</span>
+										</p>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-1">Conditions:</p>
+                        <ul class="list-disc list-inside pl-4 space-y-1">
+													${rule.conditions
+														.map(
+															(c) =>
+																`<li class="text-xs text-gray-600"><span class="font-mono bg-gray-100 p-1 rounded">${c.field}</span> ${c.operator} <span class="font-mono bg-gray-100 p-1 rounded">"${c.value}"</span></li>`,
+														)
+														.join('')}
+												</ul>
+                    </div>
+                    <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 pt-2">
+                        <button class="edit-rule flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150">Edit</button>
+                        <button class="delete-rule flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150">Delete</button>
+                    </div>
                 </div>
             `,
 				)
@@ -181,18 +209,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	function createConditionElement() {
 		const div = document.createElement('div');
+		div.className = 'flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 p-3 bg-gray-100 rounded-md';
 		div.innerHTML = `
-            <select class="condition-field">
+            <select class="condition-field w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                 <option value="from">From</option>
                 <option value="to">To</option>
                 <option value="subject">Subject</option>
             </select>
-            <select class="condition-operator">
+            <select class="condition-operator w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                 <option value="contains">Contains</option>
                 <option value="equals">Equals</option>
             </select>
-            <input type="text" class="condition-value" placeholder="Value">
-            <button type="button" class="remove-condition">Remove</button>
+            <input type="text" class="condition-value w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="Value">
+            <button type="button" class="remove-condition bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-md text-sm transition duration-150 whitespace-nowrap">Remove</button>
         `;
 		conditionsContainer.appendChild(div);
 	}

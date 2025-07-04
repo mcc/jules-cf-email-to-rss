@@ -5,7 +5,8 @@
   "scripts": {
     "deploy": "wrangler deploy src/index.ts",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "build:css": "npx tailwindcss@latest -i ./assets/admin/input.css -o ./assets/admin/output.css"
   },
   "dependencies": {
     "hono": "^4.8.3",
@@ -14,7 +15,10 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240620.0",
     "@vitest/ui": "^3.2.4",
+    "autoprefixer": "^10.4.21",
     "happy-dom": "^18.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5.5.2",
     "vitest": "^3.2.4",
     "wrangler": "^4.0.0"
