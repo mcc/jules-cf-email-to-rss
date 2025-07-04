@@ -24,7 +24,7 @@ export async function handleEmail(message: EmailMessage, env: Env) {
 			html: email.html || null,
 			text: email.text || null,
 			publishedAt,
-			isPublished: false, // Posts are drafts by default
+			isPublished: true, // Posts are published by default
 		};
 
 		// Apply rules to get initial tags
@@ -49,7 +49,7 @@ export async function handleEmail(message: EmailMessage, env: Env) {
 			subject: finalPost.subject,
 			tags: finalPost.tags,
 			publishedAt: finalPost.publishedAt,
-			isPublished: finalPost.isPublished,
+			isPublished: finalPost.isPublished, // This will now be true from initialPostData
 		};
 		
 		await Promise.all([postStorageStub.fetch('http://durable-object/create', { method: 'POST', body: JSON.stringify(finalPost) }), indexStub.fetch('http://durable-object/add', { method: 'POST', body: JSON.stringify(postSummary) })]);
